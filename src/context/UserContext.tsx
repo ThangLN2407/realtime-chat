@@ -27,12 +27,23 @@ export const UserProvider = ({ children }: Props) => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      if (currentUser) {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+      if (!currentUser?.uid) {
+        setUser(null);
+        return;
+      }
+
+      try {
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+
         if (userDoc.exists()) {
           setUser(userDoc.data() as UserType);
+        } else {
+          console.warn("Không tìm thấy user trong Firestore.");
+          setUser(null);
         }
-      } else {
+      } catch (err) {
+        console.error("Lỗi khi lấy user từ Firestore:", err);
         setUser(null);
       }
     };

@@ -1,33 +1,37 @@
-import { Button, Dropdown, Input, message, Modal, Skeleton } from "antd";
+import { Badge, Button, Dropdown, Input, message, Modal, Skeleton } from "antd";
 import type { MenuProps } from "antd";
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useUser } from "../context/UserContext";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { UserType } from "../types/user";
+import {
+  addDoc,
+  arrayUnion,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { FriendRequestType, UserType } from "../types/user";
 import Avatar from "../components/Avatar";
 import { BellOutlined } from "@ant-design/icons";
 
-const mockFriendRequests = [
-  { id: "1", name: "Nguyễn Văn A", email: "a@gmail.com" },
-  { id: "2", name: "Trần Thị B", email: "b@gmail.com" },
-];
-
 const Home = () => {
   const navigate = useNavigate();
-
   const { user } = useUser();
-
   const [searchEmail, setSearchEmail] = useState("");
   const [foundUser, setFoundUser] = useState<UserType | null>(null);
   const [modal, setModal] = useState<{ visible: boolean; notFound: boolean }>({
     visible: false,
     notFound: false,
   });
-
-  // const [friendRequests, setFriendRequests] = useState(mockFriendRequests);
+  const [friendRequests, setFriendRequests] = useState<FriendRequestType[]>([]);
 
   const handleLogout = async () => {
     try {
@@ -48,6 +52,10 @@ const Home = () => {
 
       if (!querySnapshot.empty) {
         const targetUser = querySnapshot.docs[0].data() as UserType;
+        if (user?.uid === targetUser.uid) {
+          message.error("Bạn không thể gửi lời mời cho chính mình!");
+          return;
+        }
         setFoundUser(targetUser);
         setModal({ visible: true, notFound: false });
       } else {
@@ -59,16 +67,89 @@ const Home = () => {
     }
   };
 
-  const handleAccept = (id: string) => {
-    console.log("Chấp nhận lời mời:", id);
+  const handleAccept = async (inviteId: string, fromId: string) => {
+    if (!user?.uid) return;
+
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        friends: arrayUnion(fromId),
+      });
+      await updateDoc(doc(db, "users", fromId), {
+        friends: arrayUnion(fromId),
+      });
+      await deleteDoc(doc(db, "friendRequests", inviteId));
+      message.success("Đã chấp nhận lời mời kết bạn!");
+    } catch (error) {
+      console.error("Chấp nhận lời mời thất bại", error);
+    }
   };
 
-  const handleReject = (id: string) => {
-    console.log("Xoá lời mời:", id);
+  const handleReject = async (inviteId: string) => {
+    try {
+      // await deleteDoc(doc(db, "friendRequests", inviteId));
+
+      const inviteRef = doc(db, "friendRequests", inviteId);
+      await updateDoc(inviteRef, {
+        status: "rejected",
+      });
+      message.success("Đã xóa lời mời kết bạn!");
+    } catch (error) {
+      console.error("Xoá lời mời thất bại", error);
+    }
   };
+
+  const sendFriendRequest = async () => {
+    if (!foundUser) return;
+
+    try {
+      await addDoc(collection(db, "friendRequests"), {
+        from: user?.uid,
+        to: foundUser?.uid,
+        fromDisplayName: user?.displayName,
+        photoURL: user?.photoURL,
+        createdAt: serverTimestamp(),
+        status: "pending",
+      });
+      message.success("Đã gửi lời mời kết bạn!");
+    } catch (error) {
+      console.error("Gửi lời mời thất bại", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const q = query(
+      collection(db, "friendRequests"),
+      where("to", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const invites = snapshot.docs.map((doc) => {
+          return {
+            id: doc.id,
+            ...doc.data(),
+          } as FriendRequestType;
+        });
+        setFriendRequests(invites);
+        if (invites.length > 0) {
+          message.success("Bạn có lời mời kết bạn!");
+        }
+      },
+      (error) => {
+        console.error("🔥 Lỗi snapshot listener:", error);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.uid]);
 
   const menuItems: MenuProps["items"] =
-    mockFriendRequests.length === 0
+    friendRequests.length === 0
       ? [
           {
             key: "no-invite",
@@ -76,18 +157,20 @@ const Home = () => {
             disabled: true,
           },
         ]
-      : mockFriendRequests.map((user) => ({
-          key: user.id,
+      : (friendRequests.map((friend: FriendRequestType) => ({
+          key: friend.id ?? "unknown-key",
           label: (
             <div className="flex items-end justify-between gap-2">
-              <div className="font-semibold min-w-[150px]">{user.name}</div>
+              <div className="font-semibold min-w-[150px]">
+                {friend.fromDisplayName}
+              </div>
               <div className="flex gap-4 mt-1">
                 <Button
                   type="primary"
                   size="small"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleAccept(user.id);
+                    handleAccept(String(friend.id), friend.from);
                   }}
                 >
                   Chấp nhận
@@ -97,7 +180,7 @@ const Home = () => {
                   size="small"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleReject(user.id);
+                    handleReject(String(friend.id));
                   }}
                 >
                   Xóa
@@ -105,7 +188,7 @@ const Home = () => {
               </div>
             </div>
           ),
-        }));
+        })) as MenuProps["items"]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -125,7 +208,9 @@ const Home = () => {
             arrow
             trigger={["click"]}
           >
-            <Button icon={<BellOutlined />} />
+            <Badge count={friendRequests.length} offset={[-5, 5]}>
+              <Button icon={<BellOutlined />} />
+            </Badge>
           </Dropdown>
 
           <Button
@@ -137,7 +222,7 @@ const Home = () => {
         </div>
       </header>
 
-      <main className="p-4 space-y-4">
+      <main className="p-4 space-y-4 max-w-[500px]">
         <div className="bg-white p-4 rounded shadow">
           <h2 className="text-lg font-semibold mb-2">🔍 Tìm bạn bè</h2>
           <div className="flex gap-2">
@@ -176,6 +261,7 @@ const Home = () => {
               <Button
                 type="primary"
                 onClick={() => {
+                  sendFriendRequest();
                   setModal({ visible: false, notFound: false });
                 }}
               >
