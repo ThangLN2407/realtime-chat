@@ -3,6 +3,7 @@ import {
   ReactNode,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { UserType } from "../types/user";
@@ -14,28 +15,34 @@ interface Props {
   readonly children: ReactNode;
 }
 
-const UserContext = createContext<UserType | null>(null);
+type User = {
+  user: UserType | null;
+};
+
+const UserContext = createContext<User>({ user: null });
 
 export const UserProvider = ({ children }: Props) => {
   const { currentUser } = useAuth();
-  const [appUser, setAppUser] = useState<UserType | null>(null);
+  const [user, setUser] = useState<UserType | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       if (currentUser) {
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
         if (userDoc.exists()) {
-          setAppUser(userDoc.data() as UserType);
+          setUser(userDoc.data() as UserType);
         }
       } else {
-        setAppUser(null);
+        setUser(null);
       }
     };
     fetchUser();
   }, [currentUser]);
 
+  const contextValue = useMemo(() => ({ user }), [user]);
+
   return (
-    <UserContext.Provider value={appUser}>{children}</UserContext.Provider>
+    <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
   );
 };
 

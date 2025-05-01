@@ -1,7 +1,11 @@
 import AuthForm from "../components/AuthForm";
 
 const Login = () => {
-  return <AuthForm isLogin={true} />;
+  return (
+    <div className="flex items-center justify-center h-screen bg-gray-100">
+      <AuthForm isLogin={true} />
+    </div>
+  );
 };
 
 export default Login;

@@ -6,7 +6,7 @@ export const saveUserToFireStore = async (uid: string, email: string) => {
     await setDoc(doc(db, "users", uid), {
       uid: uid,
       email: email,
-      displayName: email,
+      displayName: email.split("@")[0],
       photoURL: '',
       createdAt: new Date(),
     });

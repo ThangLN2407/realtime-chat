@@ -66,7 +66,7 @@ const AuthForm = ({ isLogin }: Props) => {
     <Form
       onFinish={onFinish}
       layout="vertical"
-      style={{ maxWidth: 400, margin: "auto" }}
+      style={{ width: 400, margin: "auto" }}
     >
       <Form.Item label="Email" name="email" rules={[{ required: true }]}>
         <Input />
@@ -87,7 +87,7 @@ const AuthForm = ({ isLogin }: Props) => {
           </div>
           <div className="mt-4 text-sm">
             Chưa có tài khoản?
-            <Link to="/register" className="text-blue-500 hover:underline">
+            <Link to="/register" className="text-blue-500 hover:underline ml-3">
               Đăng ký ngay
             </Link>
           </div>
@@ -95,7 +95,7 @@ const AuthForm = ({ isLogin }: Props) => {
       ) : (
         <div className="mt-4 text-sm">
           Đã có tài khoản?
-          <Link to="/login" className="text-blue-500 hover:underline">
+          <Link to="/login" className="text-blue-500 hover:underline ml-3">
             Đăng nhập ngay
           </Link>
         </div>
