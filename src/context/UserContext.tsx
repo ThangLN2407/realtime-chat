@@ -33,8 +33,7 @@ export const UserProvider = ({ children }: Props) => {
       }
 
       try {
-        const userDocRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
 
         if (userDoc.exists()) {
           setUser(userDoc.data() as UserType);

@@ -4,6 +4,7 @@ export interface UserType {
   displayName: string | null;
   photoURL: string | null;
   createdAt: string | Date | null;
+  friends: string[] | []
 }
 
 export interface FriendRequestType {
@@ -14,4 +15,10 @@ export interface FriendRequestType {
   to: string;
   createdAt: string | Date | null;
   status: string;
+}
+
+export interface FriendType {
+  uid: string;      
+  displayName: string;
+  photoURL: string;
 }

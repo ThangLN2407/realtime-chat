@@ -1,11 +1,11 @@
 import { Image, Skeleton } from "antd";
 import { useState } from "react";
 
-type AvatarPropsType = {
+type Props = {
   src: string | null | undefined;
 };
 
-const Avatar = ({ src }: AvatarPropsType) => {
+const Avatar = ({ src }: Props) => {
   const [loading, setLoading] = useState(!src);
 
   return (
