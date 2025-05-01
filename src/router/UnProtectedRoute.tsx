@@ -1,13 +1,13 @@
 import { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { Navigate } from "react-router-dom";
 import { Spin } from "antd";
 
 interface Props {
   readonly children: ReactNode;
 }
 
-export default function ProtectedRoute({ children }: Props) {
+export default function UnProtectedRoute({ children }: Props) {
   const { currentUser: user, loading } = useAuth();
 
   if (loading)
@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children }: Props) {
       </div>
     );
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (user) return <Navigate to="/" replace />;
 
   return <>{children}</>;
 }

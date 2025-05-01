@@ -1,0 +1,50 @@
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import { onAuthStateChanged, User } from "firebase/auth";
+import { auth } from "../firebase";
+
+type AuthContextType = {
+  loading: boolean;
+  currentUser: User | null;
+};
+
+interface Props {
+  readonly children: ReactNode;
+}
+
+const AuthContext = createContext<AuthContextType>({
+  currentUser: null,
+  loading: true,
+});
+
+export const AuthProvider = ({ children }: Props) => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({ currentUser, loading }),
+    [currentUser, loading]
+  );
+
+  return (
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);

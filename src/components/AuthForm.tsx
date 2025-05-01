@@ -4,10 +4,11 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "../firebase";
-import { AuthInfo } from "../types/auth";
+import { AuthInfoType } from "../types/auth";
 import { Link, useNavigate } from "react-router-dom";
 import { signInWithGoogle } from "../services/auth";
 import { saveUserToFireStore } from "../services/user";
+import { FirebaseError } from "firebase/app";
 
 type Props = {
   isLogin: boolean;
@@ -15,11 +16,12 @@ type Props = {
 const AuthForm = ({ isLogin }: Props) => {
   const navigate = useNavigate();
 
-  const onFinish = async (values: AuthInfo) => {
+  const onFinish = async (values: AuthInfoType) => {
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, values.email, values.password);
         message.success("Đăng nhập thành công!");
+        navigate("/");
       } else {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -33,9 +35,20 @@ const AuthForm = ({ isLogin }: Props) => {
         navigate("/login");
       }
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.log("error", error);
-        message.error(error.message);
+      if (error instanceof FirebaseError) {
+        let mess = "Đã có lỗi xảy ra.";
+        if (
+          error.code === "auth/invalid-credential" ||
+          error.code === "auth/invalid-login-credentials"
+        ) {
+          mess = "Email hoặc mật khẩu không chính xác.";
+        } else if (error.code === "auth/email-already-in-use") {
+          mess = "Email đã được sử dụng.";
+        }
+
+        message.error(mess);
+      } else {
+        console.log("Unknown error:", error);
       }
     }
   };
@@ -65,27 +78,27 @@ const AuthForm = ({ isLogin }: Props) => {
         {isLogin ? "Đăng nhập" : "Đăng ký"}
       </Button>
 
-      <div className="mt-4 mb-4 space-y-2">
-        <Button onClick={handleGoogle} block>
-          Đăng nhập bằng Google
-        </Button>
-      </div>
-
-      {isLogin && (
-        <p className="mt-4 text-sm">
-          Chưa có tài khoản?
-          <Link to="/register" className="text-blue-500 hover:underline">
-            Đăng ký ngay
-          </Link>
-        </p>
-      )}
-      {!isLogin && (
-        <p className="mt-4 text-sm">
+      {isLogin ? (
+        <>
+          <div className="mt-4 mb-4 space-y-2">
+            <Button onClick={handleGoogle} block>
+              Đăng nhập bằng Google
+            </Button>
+          </div>
+          <div className="mt-4 text-sm">
+            Chưa có tài khoản?
+            <Link to="/register" className="text-blue-500 hover:underline">
+              Đăng ký ngay
+            </Link>
+          </div>
+        </>
+      ) : (
+        <div className="mt-4 text-sm">
           Đã có tài khoản?
           <Link to="/login" className="text-blue-500 hover:underline">
             Đăng nhập ngay
           </Link>
-        </p>
+        </div>
       )}
     </Form>
   );

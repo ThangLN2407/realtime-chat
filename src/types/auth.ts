@@ -1,4 +1,4 @@
-export interface AuthInfo {
+export interface AuthInfoType {
   email: string;
   password: string;
 }
