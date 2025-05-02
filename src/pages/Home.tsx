@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, message, Modal } from "antd";
+import { Button, message, Modal, Skeleton } from "antd";
 import {
   addDoc,
   collection,
@@ -116,7 +116,11 @@ const Home = () => {
           setModal={setModal}
         />
 
-        {!!listFriend.length && <ListFriend friends={listFriend} />}
+        {!listFriend.length ? (
+          <Skeleton active />
+        ) : (
+          <ListFriend friends={listFriend} />
+        )}
       </main>
 
       <Modal
