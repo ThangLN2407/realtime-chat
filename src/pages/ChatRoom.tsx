@@ -6,13 +6,15 @@ import {
   addDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { useUser } from "../context/UserContext";
 import { Input, Button, message as antdMessage } from "antd";
 import Avatar from "../components/Avatar";
 import { MessageIdType } from "../types/chat";
+import { SmileOutlined } from "@ant-design/icons";
 
 const ChatRoom = () => {
   const navigate = useNavigate();
@@ -23,6 +25,29 @@ const ChatRoom = () => {
 
   const [messages, setMessages] = useState<MessageIdType[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const emojiRef = useRef<HTMLDivElement>(null);
+
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setNewMessage((prev) => prev + emojiData.emoji);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        emojiRef.current &&
+        !emojiRef.current.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (!chatId) return;
@@ -45,6 +70,7 @@ const ChatRoom = () => {
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
+    setShowEmojiPicker(false);
 
     try {
       await addDoc(collection(db, "chats", chatId!, "messages"), {
@@ -75,7 +101,7 @@ const ChatRoom = () => {
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`max-w-[60%] p-2 rounded-lg ${
+            className={`max-w-[60%] w-[fit-content] p-2 rounded-lg ${
               msg.senderId === user?.uid
                 ? "bg-blue-500 text-white ml-auto"
                 : "bg-gray-200 text-black"
@@ -87,13 +113,25 @@ const ChatRoom = () => {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t bg-white flex gap-2">
-        <Input
+      <div className="flex items-center gap-2 mt-4 py-3">
+        <Input.TextArea
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Nhập tin nhắn..."
-          onPressEnter={handleSend}
+          autoSize={{ minRows: 1, maxRows: 3 }}
         />
+        {/* Nút chọn emoji */}
+        <div className="relative">
+          <Button
+            icon={<SmileOutlined />}
+            onClick={() => setShowEmojiPicker((prev) => !prev)}
+          />
+          {showEmojiPicker && (
+            <div className="absolute bottom-12 right-0 z-10" ref={emojiRef}>
+              <EmojiPicker onEmojiClick={handleEmojiClick} height={300} />
+            </div>
+          )}
+        </div>
         <Button type="primary" onClick={handleSend}>
           Gửi
         </Button>
