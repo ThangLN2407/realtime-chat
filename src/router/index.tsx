@@ -1,13 +1,14 @@
 import { lazy } from "react";
 import { createBrowserRouter } from "react-router-dom";
-import App from "../App";
 import ProtectedRoute from "./ProtectedRoute";
-import Home from "../pages/Home";
-import Chat from "../pages/Chat";
 import UnProtectedRoute from "./UnProtectedRoute";
 
+const App = lazy(() => import("../App"));
 const Login = lazy(() => import("../pages/Login"));
 const Register = lazy(() => import("../pages/Register"));
+const Home = lazy(() => import("../pages/Home"));
+const ChatRoom = lazy(() => import("../pages/ChatRoom"));
+const NotFound = lazy(() => import("../pages/NotFound"));
 
 export const router = createBrowserRouter([
   {
@@ -23,8 +24,8 @@ export const router = createBrowserRouter([
         element: <Home />,
       },
       {
-        path: "chat",
-        element: <Chat />,
+        path: "chat/:chatId",
+        element: <ChatRoom />,
       },
     ],
   },
@@ -43,5 +44,9 @@ export const router = createBrowserRouter([
         <Register />
       </UnProtectedRoute>
     ),
+  },
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ]);
