@@ -14,7 +14,7 @@ const axiosInstance: AxiosInstance = axios.create({
 
 // ✅ Interceptor xử lý request
 axiosInstance.interceptors.request.use(
-  (config: axios.InternalAxiosRequestConfig) => {
+  (config) => {
     // Nếu cần thêm token: config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
