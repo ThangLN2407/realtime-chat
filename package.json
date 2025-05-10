@@ -1,14 +1,16 @@
 {
   "name": "realtime-chat",
-  "private": true,
+  "private": false,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://ThangLN2407.github.io/realtime-chat",
+  "homepage": "https://thangln2407.github.io/realtime-chat",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
